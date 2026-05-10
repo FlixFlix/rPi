@@ -61,3 +61,52 @@ services:
       - /opt/containers/plex/config:/config
       - /data/media:/data/media
     restart: unless-stopped
+
+  mariadb:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: mariadb
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=jphardwoodflooring
+      - MYSQL_USER=jph_user
+      - MYSQL_PASSWORD=${MARIADB_JPH_PASSWORD}
+    volumes:
+      - /opt/containers/mariadb/data:/config
+    expose:
+      - "3306"
+
+  wp_jph:
+    image: wordpress:php8.2-apache
+    container_name: wp_jph
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+    environment:
+      - WORDPRESS_DB_HOST=mariadb:3306
+      - WORDPRESS_DB_NAME=jphardwoodflooring
+      - WORDPRESS_DB_USER=jph_user
+      - WORDPRESS_DB_PASSWORD=${MARIADB_JPH_PASSWORD}
+    volumes:
+      - /home/pi/projects/sites/jphardwoodflooring.com/public:/var/www/html
+    expose:
+      - "80"
+
+  wp_rocket:
+    image: wordpress:php8.2-apache
+    container_name: wp_rocket
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+    environment:
+      - WORDPRESS_DB_HOST=mariadb:3306
+      - WORDPRESS_DB_NAME=wp_rocket
+      - WORDPRESS_DB_USER=wprocket_user
+      - WORDPRESS_DB_PASSWORD=${MARIADB_WPROCKET_PASSWORD}
+    volumes:
+      - /home/pi/projects/sites/wp.rocket.int.yt/public:/var/www/html
+    expose:
+      - "80"
