@@ -35,8 +35,11 @@ Use these host paths:
 - `/opt/containers/audiobookshelf`  
   Audiobookshelf config and metadata.
 
-- `/opt/containers/apachephp`  
-  Future custom PHP/Apache build context and vhost config.
+- `/opt/containers/plex`  
+  Plex Media Server config.
+
+- `/opt/containers/mariadb`  
+  MariaDB database files for WordPress and other services.
 
 - `/data/media`  
   Shared media library area.
@@ -45,7 +48,7 @@ Use these host paths:
   Shared downloads area.
 
 - `/home/pi/projects/sites`  
-  Future website content root.
+  Website content root.
 
 ## 4. Compose Project Model
 
@@ -60,7 +63,7 @@ Examples:
 
 - qBittorrent backend: `qbittorrent:8080`
 - Audiobookshelf backend: `audiobookshelf:80`
-- Future PHP/Apache backend: `apachephp:80`
+- WordPress backend: `wp_rocket:80` or `wp_jph:80`
 
 ## 5. Reverse Proxy and Public Access
 
@@ -77,6 +80,9 @@ Examples:
 - NPM admin UI remains LAN-only on port `81`.
 - Do **not** expose `81` publicly.
 - For normal public web access, expose only `80` and `443`.
+- **Standard Proxy Configuration:**
+  - Enable **Block Common Exploits**.
+  - Enable **Force SSL**, **HTTP/2 Support**, **HSTS Enabled**, and **HSTS Subdomains**.
 
 ### Important NPM adjustment
 
@@ -122,10 +128,6 @@ After container recreation, enable qBittorrent's alternative Web UI and set the 
 
 - `/vuetorrent`
 
-### Note on incomplete downloads
-
-qBittorrent is intended to move completed downloads out of the incomplete folder, but that behavior is not perfectly reliable in practice. A finished torrent may still remain in the incomplete folder in some cases.
-
 ## 7. Audiobookshelf
 
 ### Role
@@ -145,49 +147,49 @@ Audiobookshelf is part of the main Compose stack and is intended to be reverse-p
 - NPM backend target: `audiobookshelf:80`
 - Suggested public hostname: `books.rocket.int.yt`
 
-## 8. Planned PHP/Apache Web Hosting Model
+## 8. Plex Media Server
 
-This design was agreed conceptually and should be used when Apache/PHP is added to the stack.
+### Role
 
-### Container model
+Plex is part of the main Compose stack and uses **host network mode** for better discovery and DLNA support.
 
-- Use a custom `php:8.2-apache` image in the same main Compose file.
-- Do not publish a host port for Apache if it is only meant to sit behind NPM.
-- NPM should proxy to `apachephp:80`.
+### Paths
 
-### Site layout
+- Config: `/opt/containers/plex/config`
+- Media: `/data/media`
 
-All sites live under one root:
+### Networking
 
-- `/home/pi/projects/sites`
+- Network Mode: `host`
+- Default Port: `32400`
 
-Each site gets its own folder named by its full base hostname, for example:
+## 9. WordPress Stack (MariaDB + WordPress)
 
-- `/home/pi/projects/sites/example.com`
-- `/home/pi/projects/sites/rocket.int.yt`
+### Role
 
-Recommended subfolders per site:
+A multi-site WordPress setup using a single MariaDB instance and separate WordPress containers.
 
-- `public` for the web root
-- `bin` for scripts
-- `var` for generated files, uploads, and working data
+### Paths
 
-### Virtual hosts
+- MariaDB Data: `/opt/containers/mariadb/data`
+- Site 1 (jphardwoodflooring.com): `/home/pi/projects/sites/jphardwoodflooring.com/public`
+- Site 2 (wp.rocket.int.yt): `/home/pi/projects/sites/wp.rocket.int.yt/public`
 
-Use Apache name-based virtual hosts. Each site gets its own vhost file. The document root points to that site's `public` folder.
+### Networking
 
-### PHP running shell commands
+- MariaDB Port: `3306` (Internal to Compose network)
+- WordPress Ports: `80` (Internal to Compose network)
+- NPM Backend Targets: `wp_jph:80` and `wp_rocket:80`
 
-PHP is allowed to execute shell commands intentionally in this design, including running Python scripts.
+### Environment
 
-Guardrails:
+Sensitive credentials (DB passwords, etc.) are stored in a host-side `.env` file at `/opt/containers/.env`.
 
-- Keep executable scripts inside the mounted site tree, preferably in each site's `bin` folder.
-- Install Python inside the Apache/PHP container.
-- Prefer calling scripts by full path.
-- Treat shell execution as deliberate application behavior, not a general host-control mechanism.
+### WP-CLI
 
-## 9. Guardrails
+WP-CLI is installed in both WordPress containers to allow for command-line management of the sites.
+
+## 10. Guardrails
 
 - Keep `pi` as the main admin user.
 - Keep important app data host-visible.
@@ -196,10 +198,12 @@ Guardrails:
 - Do not expose NPM admin publicly.
 - Do not expose backend web ports publicly when NPM is meant to front them.
 - For inter-container proxying, prefer service names on the Compose network instead of host IP + published port.
-- If a temporary debug workaround is needed, publishing a backend port on the host is acceptable, but it is not the preferred steady-state design.
+- **Security:** Always enable exploit blocking and HSTS in NPM for public-facing sites.
 
-## 10. Current Public Hostname Plan
+## 11. Current Public Hostname Plan
 
 - `torrent.rocket.int.yt` -> qBittorrent Web UI through NPM
 - `books.rocket.int.yt` -> Audiobookshelf through NPM
-- `rocket.int.yt` and future domains/subdomains -> Apache/PHP sites through NPM when that service is added
+- `wp.rocket.int.yt` -> WordPress site through NPM
+- `jphardwoodflooring.com` -> WordPress site through NPM
+- `npm.rocket.int.yt` -> Nginx Proxy Manager through NPM (Internal use)
