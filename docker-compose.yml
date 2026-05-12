@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     environment:
       - TZ=America/Chicago
+      - CONFIG_PATH=/config
+      - METADATA_PATH=/metadata
     volumes:
       - /data/media/audiobooks:/audiobooks
       - /data/media/podcasts:/podcasts
