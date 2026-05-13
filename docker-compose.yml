@@ -15,6 +15,18 @@ services:
     expose:
       - "80"
 
+  library-manager:
+    image: ghcr.io/deucebucket/library-manager:latest
+    container_name: library-manager
+    restart: unless-stopped
+    environment:
+      - TZ=America/Chicago
+    volumes:
+      - /data/media/audiobooks:/audiobooks
+      - /opt/containers/library-manager/config:/config
+    expose:
+      - "5000"
+
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
