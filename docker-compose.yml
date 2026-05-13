@@ -125,3 +125,13 @@ services:
       - /home/pi/projects/sites/wp.rocket.int.yt/public:/var/www/html
     expose:
       - "80"
+
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    volumes:
+      - /opt/containers/homeassistant/config:/config
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
