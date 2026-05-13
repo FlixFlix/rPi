@@ -133,5 +133,4 @@ services:
       - /opt/containers/homeassistant/config:/config
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
-    privileged: true
     network_mode: host
