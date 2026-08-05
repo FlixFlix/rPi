@@ -3,6 +3,8 @@ services:
     image: ghcr.io/advplyr/audiobookshelf:latest
     container_name: audiobookshelf
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     environment:
       - TZ=America/Chicago
       - CONFIG_PATH=/config
@@ -67,6 +69,8 @@ services:
     image: lscr.io/linuxserver/plex:latest
     container_name: plex
     network_mode: host
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     environment:
       - PUID=1000
       - PGID=1000
@@ -134,3 +138,15 @@ services:
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     network_mode: host
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_SCHEDULE=0 0 3 * * 0
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_LABEL_ENABLE=true
+      - DOCKER_API_VERSION=1.54
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
