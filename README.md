@@ -72,7 +72,7 @@ qBittorrent is part of the main Compose stack and is reachable publicly only thr
 - Downloads root on host: `/data/downloads/qbittorrent`
 ### VueTorrent
 VueTorrent is enabled via Docker mod:
-- `DOCKER_MODS=ghcr.io/gabe565/linuxserver-mod-vuetorrent`
+- `DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest`
 - Alternative Web UI path: `/vuetorrent`
 
 ## 7. Audiobookshelf & Library Manager
@@ -86,6 +86,8 @@ Audiobookshelf handles your audiobooks and podcasts. The Library Manager is acce
 ### Networking
 - Main App: `books.rocket.int.yt` -> `audiobookshelf:80`
 - **Library Manager:** `books.rocket.int.yt/manage` -> `library-manager:5000` (NPM Custom Location)
+### Maintenance
+- **File Watcher:** Enabled via `CONFIG_PATH` and `METADATA_PATH` environment variables.
 
 ## 8. Plex Media Server
 ### Role
@@ -106,6 +108,15 @@ Home Automation platform.
 - Network Mode: `host`
 - Default Port: `8123`
 - Suggested public hostname: `ha.rocket.int.yt`
+### Reverse Proxy Configuration
+To fix "400 Bad Request" when using NPM, the following must be in `configuration.yaml`:
+```yaml
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.16.0.0/12
+    - 192.168.1.31
+```
 
 ## 10. WordPress Stack (MariaDB + WordPress)
 ### Role
@@ -117,14 +128,21 @@ A multi-site WordPress setup using a single MariaDB instance.
 ### WP-CLI
 WP-CLI is installed in both containers for management.
 
-## 11. Guardrails
+## 11. Maintenance & Automation (Watchtower)
+Watchtower is used to automate container updates with an opt-in strategy.
+- **Schedule:** Every Sunday at 3:00 AM local time (`0 0 3 * * 0`).
+- **Image Cleanup:** Enabled to remove old images after updates.
+- **Opt-in Mode:** Only containers with the label `com.centurylinklabs.watchtower.enable=true` are updated.
+- **Enabled Services:** `plex`, `audiobookshelf`.
+
+## 12. Guardrails
 - Keep `pi` as the main admin user.
 - Keep important app data host-visible.
 - Avoid broad mounts unless truly needed.
 - **Security:** Always enable exploit blocking and HSTS in NPM for public-facing sites.
 - **Inter-container proxying:** Prefer service names on the Compose network.
 
-## 12. Current Public Hostname Plan
+## 13. Current Public Hostname Plan
 - `torrent.rocket.int.yt` -> qBittorrent
 - `books.rocket.int.yt` -> Audiobookshelf
 - `books.rocket.int.yt/manage` -> Library Manager
